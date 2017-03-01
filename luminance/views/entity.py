@@ -56,7 +56,7 @@ class ListBoxRow(Gtk.ListBoxRow):
             entity_name_label.set_text(self.model.name)
 
         self.color_chooser = builder.get_object('color-chooser')
-        print(self.model)
+
         if self.model.on:
             if is_dimmable_light(self.model):
                 self.color_chooser.set_rgba(

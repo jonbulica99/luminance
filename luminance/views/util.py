@@ -15,3 +15,7 @@ def hsv_to_gdk_rgb(hue, sat, bri):
     )
 
     return Gdk.RGBA(red=rgb[0], green=rgb[1], blue=rgb[2])
+
+
+def is_dimmable_light(model):
+    return not hasattr(model, 'group_id') and model.type != "Dimmable light"

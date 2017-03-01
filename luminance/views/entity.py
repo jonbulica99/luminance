@@ -9,7 +9,7 @@ from gi.repository import Gdk
 from gi.repository import Gtk
 
 from .util import hsv_to_gdk_rgb
-from .util import is_dimmable_light
+from .util import is_nondimmable_light
 from .. import get_resource_path
 
 
@@ -58,7 +58,7 @@ class ListBoxRow(Gtk.ListBoxRow):
         self.color_chooser = builder.get_object('color-chooser')
 
         if self.model.on:
-            if is_dimmable_light(self.model):
+            if is_nondimmable_light(self.model):
                 self.color_chooser.set_rgba(
                     hsv_to_gdk_rgb(
                         self.model.hue,
@@ -89,7 +89,7 @@ class ListBoxRow(Gtk.ListBoxRow):
         return self._model
 
     def _on_color_activate(self, *args):
-        if self.model.on and is_dimmable_light(self.model) and self.color_chooser.get_visible():
+        if self.model.on and is_nondimmable_light(self.model) and self.color_chooser.get_visible():
             rgba = self.color_chooser.get_rgba()
             hsv = colorsys.rgb_to_hsv(rgba.red, rgba.green, rgba.blue)
 

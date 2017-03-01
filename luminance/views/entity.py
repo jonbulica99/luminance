@@ -30,12 +30,13 @@ class FramedEntityList(Gtk.Box):
         self.add(self.content)
 
     def _on_row_activated(self, listbox, row):
-        DetailWindow(
-            row.model,
-            modal=True,
-            transient_for=self.get_toplevel(),
-            type_hint=Gdk.WindowTypeHint.DIALOG
-        ).present()
+        if is_nondimmable_light(row.model):
+            DetailWindow(
+                row.model,
+                modal=True,
+                transient_for=self.get_toplevel(),
+                type_hint=Gdk.WindowTypeHint.DIALOG
+            ).present()
 
 
 class ListBoxRow(Gtk.ListBoxRow):
@@ -75,6 +76,8 @@ class ListBoxRow(Gtk.ListBoxRow):
         self.brightness_scale.set_value(self.model.brightness)
 
         self.color_chooser_popover_button = builder.get_object('color-chooser-popover-button')
+        if not is_nondimmable_light(self.model):
+            self.color_chooser_popover_button.set_sensitive(False)
 
         entity_switch = builder.get_object('entity-switch')
         entity_switch.set_state(self.model.on)
@@ -105,7 +108,8 @@ class ListBoxRow(Gtk.ListBoxRow):
     def _on_entity_switch_state_set(self, switch, value):
         self.model.on = value
         self.brightness_scale.set_sensitive(value)
-        self.color_chooser_popover_button.set_sensitive(value)
+        if is_nondimmable_light(self.model):
+            self.color_chooser_popover_button.set_sensitive(value)
 
 
 class DetailWindow(Gtk.Window):

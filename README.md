@@ -28,6 +28,14 @@ it.
 * [requests](https://github.com/kennethreitz/requests) 2.10 or later
 * Hue bridge (tested with the first generation only)
 
+#### Requirements installation for Debian based distributions
+
+You will need the following packages installed prior to running [installation (build)](https://github.com/craigcabrey/luminance#installing) on Debian-based distributions.
+
+```
+sudo apt install autoconf autogen build-essential python-gi-dev libgtk-3-dev gsettings-desktop-schemas-dev libgnome-desktop-3-dev libxml2-utils && pip3 install phue
+```
+
 ### Installing
 
 1. Clone this repository.

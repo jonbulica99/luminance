@@ -9,6 +9,7 @@ from gi.repository import Gdk
 from gi.repository import Gtk
 
 from .util import hsv_to_gdk_rgb
+from .util import is_nondimmable_light
 from .. import get_resource_path
 
 
@@ -29,12 +30,13 @@ class FramedEntityList(Gtk.Box):
         self.add(self.content)
 
     def _on_row_activated(self, listbox, row):
-        DetailWindow(
-            row.model,
-            modal=True,
-            transient_for=self.get_toplevel(),
-            type_hint=Gdk.WindowTypeHint.DIALOG
-        ).present()
+        if is_nondimmable_light(row.model):
+            DetailWindow(
+                row.model,
+                modal=True,
+                transient_for=self.get_toplevel(),
+                type_hint=Gdk.WindowTypeHint.DIALOG
+            ).present()
 
 
 class ListBoxRow(Gtk.ListBoxRow):
@@ -57,18 +59,25 @@ class ListBoxRow(Gtk.ListBoxRow):
         self.color_chooser = builder.get_object('color-chooser')
 
         if self.model.on:
-            self.color_chooser.set_rgba(
-                hsv_to_gdk_rgb(
-                    self.model.hue,
-                    self.model.saturation,
-                    self.model.brightness
+            if is_nondimmable_light(self.model):
+                self.color_chooser.set_rgba(
+                    hsv_to_gdk_rgb(
+                        self.model.hue,
+                        self.model.saturation,
+                        self.model.brightness
+                    )
                 )
-            )
+            else:
+                self.color_chooser.set_rgba(
+                    Gdk.RGBA(1, 1, 1)
+                )
 
         self.brightness_scale = builder.get_object('brightness-scale')
         self.brightness_scale.set_value(self.model.brightness)
 
         self.color_chooser_popover_button = builder.get_object('color-chooser-popover-button')
+        if not is_nondimmable_light(self.model):
+            self.color_chooser_popover_button.set_sensitive(False)
 
         entity_switch = builder.get_object('entity-switch')
         entity_switch.set_state(self.model.on)
@@ -83,7 +92,7 @@ class ListBoxRow(Gtk.ListBoxRow):
         return self._model
 
     def _on_color_activate(self, *args):
-        if self.model.on and self.color_chooser.get_visible():
+        if self.model.on and is_nondimmable_light(self.model) and self.color_chooser.get_visible():
             rgba = self.color_chooser.get_rgba()
             hsv = colorsys.rgb_to_hsv(rgba.red, rgba.green, rgba.blue)
 
@@ -99,7 +108,8 @@ class ListBoxRow(Gtk.ListBoxRow):
     def _on_entity_switch_state_set(self, switch, value):
         self.model.on = value
         self.brightness_scale.set_sensitive(value)
-        self.color_chooser_popover_button.set_sensitive(value)
+        if is_nondimmable_light(self.model):
+            self.color_chooser_popover_button.set_sensitive(value)
 
 
 class DetailWindow(Gtk.Window):

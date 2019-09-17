@@ -147,45 +147,54 @@ class Setup(Gtk.Assistant):
 
     def search(self, cb):
         try:
+            print('requesting https://www.meethue.com/api/nupnp')
             data = requests.get('https://www.meethue.com/api/nupnp').json()
 
             if not data:
                 raise ValueError('No bridges registered with Philips')
         except Exception:
-            import urllib.parse
-
+            print('scanning network')
             import netdisco.discovery
 
-            network_discovery = netdisco.discovery.NetworkDiscovery(
-                limit_discovery=['philips_hue']
-            )
+            network_discovery = netdisco.discovery.NetworkDiscovery()
             network_discovery.scan()
+
             results = [
                 {
-                    'display': result[0],
-                    'address': urllib.parse.urlparse(result[1]).hostname
+                    'display': result['name'],
+                    'address': result['host']
                 } for result in network_discovery.get_info('philips_hue')
             ]
         else:
             results = []
 
             for result in data:
-                ip = result['internalipaddress']
-                res = requests.get('http://{ip}/description.xml'.format(ip=ip))
+                try:
+                    ip = result['internalipaddress']
 
-                name = [_ for _ in filter(
-                    lambda line: 'friendlyName' in line,
-                    res.text.splitlines()
-                )]
+                    print('targeting', ip)
+                    res = requests.get('http://{ip}/description.xml'.format(ip=ip), timeout=1)
 
-                assert(len(name) == 1)
+                    name = [_ for _ in filter(
+                        lambda line: 'friendlyName' in line,
+                        res.text.splitlines()
+                    )]
 
-                # Yea, this is easier than actually trying to parse the xml...
-                name = name[0] \
-                    .replace('<friendlyName>', '') \
-                    .replace('</friendlyName>', '')
+                    assert(len(name) == 1)
 
-                results.append({'display': name, 'address': ip})
+                    # Yea, this is easier than actually trying to parse the xml...
+                    name = name[0] \
+                        .replace('<friendlyName>', '') \
+                        .replace('</friendlyName>', '')
+
+                    results.append({'display': name, 'address': ip})
+                    print('found accessible bridge', name, ip)
+                except Exception:
+                    continue
+
+            if not results:
+                raise ValueError('could not find any accessible bridge')
+
         finally:
             GLib.idle_add(cb, results)
 

@@ -25,7 +25,10 @@ class FramedEntityList(Gtk.Box):
         self.list = builder.get_object('list')
 
         for entity in model:
-            self.list.add(ListBoxRow(entity))
+            try:
+                self.list.add(ListBoxRow(entity))
+            except KeyError as e:
+                print("{} not supported. ".format(entity))
 
         self.add(self.content)
 
@@ -73,7 +76,10 @@ class ListBoxRow(Gtk.ListBoxRow):
                 )
 
         self.brightness_scale = builder.get_object('brightness-scale')
-        self.brightness_scale.set_value(self.model.brightness)
+        try:
+            self.brightness_scale.set_value(self.model.brightness)
+        except KeyError as e:
+            print("Failed setting the brightness for ", self.model)
 
         self.color_chooser_popover_button = builder.get_object('color-chooser-popover-button')
         if not is_nondimmable_light(self.model):
@@ -133,13 +139,18 @@ class DetailWindow(Gtk.Window):
         self.brightness_scale.set_value(self.model.brightness)
 
         self.color_chooser = builder.get_object('color-chooser')
-        self.color_chooser.set_rgba(
-            hsv_to_gdk_rgb(
-                self.model.hue,
-                self.model.saturation,
-                self.model.brightness
+        if is_nondimmable_light(self.model):
+            self.color_chooser.set_rgba(
+                hsv_to_gdk_rgb(
+                    self.model.hue,
+                    self.model.saturation,
+                    self.model.brightness
+                )
             )
-        )
+        else:
+            self.color_chooser.set_rgba(
+                Gdk.RGBA(1, 1, 1)
+            )
 
         self.alert_long_button = builder.get_object('alert-long-button')
         self.alert_short_button = builder.get_object('alert-short-button')
@@ -182,7 +193,7 @@ class DetailWindow(Gtk.Window):
         self.destroy()
 
     def _on_color_activate(self, *args):
-        if self.model.on and self.color_chooser.get_visible():
+        if self.model.on and is_nondimmable_light(self.model) and self.color_chooser.get_visible():
             rgba = self.color_chooser.get_rgba()
             hsv = colorsys.rgb_to_hsv(rgba.red, rgba.green, rgba.blue)
 
